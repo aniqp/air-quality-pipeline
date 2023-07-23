@@ -1,0 +1,6 @@
+datafiles/
+sql/
+docker/airflow/venv
+docker/airflow/logs
+docker/airflow/plugins
+docker/airflow/historical_data
