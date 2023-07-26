@@ -11,13 +11,13 @@ def map_column_to_hour(col):
     return new_time
 
 def map_hour_to_column(hour):
+    format_time = datetime.strptime(hour, '%H:%M').time()
     hour_mapping = {
-        f'H{i:02d}': f'{i:02d}:00'
+        f'{i:02d}:00': f'H{i:02d}'
         for i in range(24)
     }
-    format_time = hour_mapping[col]
-    new_time = datetime.strptime(format_time, '%H:%M').time()
+    new_time = hour_mapping[hour]
 
     return new_time
 
-print(map_column_to_hour('H10'))
+print(map_hour_to_column('H10'))

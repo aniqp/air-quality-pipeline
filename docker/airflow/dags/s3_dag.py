@@ -16,9 +16,6 @@ default_args = {
     'retry_delay': timedelta(minutes=5)
 }
 
-url = "https://api.openaq.org/v2/latest?limit=100&page=1&offset=0&sort=desc&parameter=pm25&radius=1000&city=ONTARIO&order_by=lastUpdated&dumpRaw=false"
-headers = {"accept": "application/json", "X-API-Key": "bf94e16e413120ef454855fc046f5018c262c450b0ee9e976e31b4f5fad116e9"}
-
 with DAG(
     dag_id='s3_dag_new',
     default_args=default_args,
@@ -28,7 +25,7 @@ with DAG(
 ) as dag:
 
     def retrieve_data():
-        data = get_data(url, headers)
+        data = get_data()
         return data
 
     def upload_to_s3(ti):

@@ -9,7 +9,7 @@ from airflow import DAG
 from airflow.providers.mysql.hooks.mysql import MySqlHook
 from airflow.operators.python import PythonOperator
 from datetime import datetime, timedelta
-from air_quality_functions.process_data import map_column_to_hour
+from air_quality_functions.process_data import map_column_to_hour, map_hour_to_column
 from air_quality_functions.retrieve_data import get_data
 
 # Default arguments for the DAG
@@ -95,7 +95,6 @@ def get_value_for_latest_pm25(ti):
     latest_pm25_date = datetime.strptime(latest_pm25_date, "%Y-%m-%d").date()
     latest_pm25_time_col = ti.xcom_pull(task_ids = 'check_latest_pm25', key = 'latest_pm25_time_col')
 
-
     # Protect against SQL injections
     valid_columns = [f'H{i:02d}' for i in range(24)]
     if latest_pm25_time_col not in valid_columns:
@@ -125,18 +124,29 @@ def find_time_difference(ti):
     ti.xcom_push(key = 'time_diff', value = time_diff)
     
 def handle_data_upload(ti, **kwargs):
+    hook = MySqlHook(mysql_conn_id='mysql_conn')
+    
     latest_api_value = ti.xcom_pull(task_ids = 'check_latest_pm25_value', key = 'latest_pm25_value')
-    latest_pm25_date = date(ti.xcom_pull(task_ids = 'check_latest_pm25', key = 'latest_pm25_date_col'))
-    latest_pm25_time_col = ti.xcom_pull(task_ids = 'check_latest_pm25', key = 'latest_pm25_time_col')    
+    
+    latest_pm25_datetime = ti.xcom_pull(task_ids = 'check_latest_pm25', key = 'latest_pm25_datetime')
+    latest_pm25_datetime = datetime.strptime(latest_pm25_datetime, "%Y-%m-%dT%H:%M:%S")
+    
     time_diff = int(ti.xcom_pull(task_ids = 'find_pm25_time_difference', key = 'time_diff'))
 
-    if time_diff <= 1:
-        query = f"""
-                UPDATE kitchener_pm25
-                SET {latest_pm25_time_col} = 7
-                WHERE date_column = '2023-07-20'
-            """
+    new_datetime = latest_pm25_datetime + timedelta(hours = 1.0)
+    new_date = new_datetime.date
+    new_time = new_datetime.time()
+    new_time_col = map_hour_to_column(new_time)
 
+    if time_diff <= 1:
+        simple_update_query = f"""
+                UPDATE kitchener_pm25
+                SET {new_time_col} = %s
+                WHERE date_column = %s
+            """
+        hook.run(simple_update_query, parameters=(latest_api_value, new_date))
+    else:
+        pass
     
 get_pm25_query_col_task = PythonOperator(
     task_id = 'check_latest_pm25',
