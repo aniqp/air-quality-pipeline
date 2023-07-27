@@ -65,7 +65,7 @@ def backfill_data(start_date, curr_datetime):
                 row = [None for i in range(24)]
                 row.insert(0, str(datetime.date()))
 
-            row[index_time_data(datetime.time())] = current_result['value']
+            row[index_time_data(datetime.time())] = str(current_result['value'])
 
           prev_date = datetime.date()
 
