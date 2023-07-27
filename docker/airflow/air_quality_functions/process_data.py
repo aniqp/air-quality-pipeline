@@ -1,4 +1,9 @@
-from datetime import datetime, time, timedelta
+import sys
+from pathlib import Path
+sys.path.append(str(Path(__file__).resolve().parent.parent))
+
+from datetime import datetime, time, timedelta, timezone
+from dateutil.parser import parse
 
 def map_column_to_hour(col):
     hour_mapping = {
@@ -11,13 +16,18 @@ def map_column_to_hour(col):
     return new_time
 
 def map_hour_to_column(hour):
-    format_time = datetime.strptime(hour, '%H:%M').time()
+    hour_str = hour.strftime('%H:%M')
     hour_mapping = {
         f'{i:02d}:00': f'H{i:02d}'
         for i in range(24)
     }
-    new_time = hour_mapping[hour]
+    new_time = hour_mapping[hour_str]
 
     return new_time
 
-print(map_hour_to_column('H10'))
+def process_utc_string(utc):
+    utc_datetime = parse(utc).astimezone(timezone.utc)
+    formatted_datetime_str = utc_datetime.strftime("%Y-%m-%d %H:%M")
+    new_datetime = datetime.strptime(formatted_datetime_str, "%Y-%m-%d %H:%M")
+
+    return new_datetime
