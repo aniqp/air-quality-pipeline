@@ -1,3 +1,6 @@
 # Add new requirements, such as sklearn here
 requests==2.27.1
+pystan==2.18
+prophet
+
 # apache-airflow-providers-amazon[aws]==8.1.0

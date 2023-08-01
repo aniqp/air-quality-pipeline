@@ -2,20 +2,20 @@ import sys
 from pathlib import Path
 sys.path.append(str(Path(__file__).resolve().parent.parent))
 
-from datetime import datetime, timedelta, date
+from datetime import datetime, timedelta, date, timezone, time
 from dateutil.parser import parse
 from datetime import timezone
 from airflow import DAG
 from airflow.providers.mysql.hooks.mysql import MySqlHook
 from airflow.operators.python import PythonOperator
 from datetime import datetime, timedelta
-from air_quality_functions.process_data import map_column_to_hour, map_hour_to_column
-from air_quality_functions.retrieve_data import get_data
+from air_quality_functions.process_data import map_column_to_hour, map_hour_to_column, process_utc_string
+from air_quality_functions.retrieve_data import get_data, backfill_data
 
 # Default arguments for the DAG
 default_args = {
     'owner': 'aniqpremji',
-    'start_date': datetime(2023, 7, 22),
+    'start_date': datetime(2023, 7, 28, 0, 0),
     'retries': 1,
     'retry_delay': timedelta(minutes=5),
 }
@@ -24,7 +24,8 @@ default_args = {
 dag = DAG(
     'handle_data_upload',
     default_args=default_args,
-    schedule_interval=timedelta(days=1),
+    schedule_interval='*/30 * * * *',
+    catchup = False
 )
 
 def query_latest_pm25(ti):
@@ -82,9 +83,8 @@ def get_latest_pm25_api(ti):
     """
         Get latest information from the OpenAQ api
     """
-    latest_api = get_data(url = "https://api.openaq.org/v2/latest?parameter=pm25&parameter=o3&location=Kitchener",
-            headers = {"accept": "application/json", "X-API-Key": "bf94e16e413120ef454855fc046f5018c262c450b0ee9e976e31b4f5fad116e9"})
-    ti.xcom_push(key = 'latest_api', value = latest_api)    
+    latest_pm25_api = get_data()
+    ti.xcom_push(key = 'latest_pm25_api', value = latest_pm25_api)    
 
 def get_value_for_latest_pm25(ti):
     """
@@ -110,44 +110,84 @@ def get_value_for_latest_pm25(ti):
     ti.xcom_push(key = 'latest_pm25_value', value = result)
 
 def find_time_difference(ti):
-    result = ti.xcom_pull(task_ids = 'get_latest_result', key ='latest_api')
+    result = ti.xcom_pull(task_ids = 'get_latest_pm25_api', key ='latest_pm25_api')
     latest_datetime = ti.xcom_pull(task_ids = 'check_latest_pm25', key = 'latest_pm25_datetime')
     latest_datetime = datetime.strptime(latest_datetime, "%Y-%m-%dT%H:%M:%S")
 
-    utc_datetime = parse(result['pm25']['last_updated']).astimezone(timezone.utc)
-    formatted_datetime_str = utc_datetime.strftime("%Y-%m-%d %H:%M")
-    new_datetime = datetime.strptime(formatted_datetime_str, "%Y-%m-%d %H:%M")
+    api_last_updated = result['pm25']['last_updated']
 
-    time_diff = str((new_datetime - latest_datetime).total_seconds()/3600)
+    new_datetime = process_utc_string(api_last_updated)
+
+    time_diff = int(float((new_datetime - latest_datetime).total_seconds()/3600))
     print(f'Time diff: {time_diff} hours')
 
     ti.xcom_push(key = 'time_diff', value = time_diff)
     
-def handle_data_upload(ti, **kwargs):
+def handle_pm25_upload(ti, **kwargs):
     hook = MySqlHook(mysql_conn_id='mysql_conn')
     
-    latest_api_value = ti.xcom_pull(task_ids = 'check_latest_pm25_value', key = 'latest_pm25_value')
+    latest_api_value = ti.xcom_pull(task_ids = 'get_latest_pm25_api', key = 'latest_pm25_api')
+    latest_api_value = latest_api_value['pm25']['value']
+
+    latest_pm25_date_col = ti.xcom_pull(task_ids = 'check_latest_pm25', key = 'latest_pm25_date_col')
     
     latest_pm25_datetime = ti.xcom_pull(task_ids = 'check_latest_pm25', key = 'latest_pm25_datetime')
-    latest_pm25_datetime = datetime.strptime(latest_pm25_datetime, "%Y-%m-%dT%H:%M:%S")
+    latest_pm25_datetime = process_utc_string(latest_pm25_datetime)
     
-    time_diff = int(ti.xcom_pull(task_ids = 'find_pm25_time_difference', key = 'time_diff'))
+    time_diff = int(float((ti.xcom_pull(task_ids = 'find_pm25_time_difference', key = 'time_diff'))))
 
     new_datetime = latest_pm25_datetime + timedelta(hours = 1.0)
-    new_date = new_datetime.date
+    new_date = new_datetime.date()
     new_time = new_datetime.time()
     new_time_col = map_hour_to_column(new_time)
 
-    if time_diff <= 1:
-        simple_update_query = f"""
+    # If data is new
+    if time_diff == 1:
+        # If next hour is a new day
+        if new_time == time(hour = 0, minute = 0, second = 0):
+            simple_update_query = """INSERT INTO kitchener_pm25 (date_column, H00) VALUES (%s, %s)"""
+            hook.run(simple_update_query, parameters=(new_date, latest_api_value))
+        else:
+            simple_update_query = f"""
+                    UPDATE kitchener_pm25
+                    SET {new_time_col} = %s
+                    WHERE date_column = %s
+                """
+            hook.run(simple_update_query, parameters=(latest_api_value, new_date))
+    # Otherwise, if data is not caught up
+    else:
+        data_to_backfill = backfill_data(str(latest_pm25_datetime.date()), latest_pm25_datetime)
+        first_row = data_to_backfill[0]
+        # If first row is already full
+        if first_row[0] == latest_pm25_date_col:
+            first_row_filtered = tuple(value for value in first_row if value is not None)
+            first_row_cols = ['date_column = %s'] + [f'H{i:02d} = %s' for i in range(24) if first_row[i+1] is not None]
+            first_row_cols_str = ', '.join(first_row_cols)
+            parameters = [value for value in first_row_filtered]            
+            first_row_update_query = f"""
                 UPDATE kitchener_pm25
-                SET {new_time_col} = %s
+                SET {first_row_cols_str}
                 WHERE date_column = %s
             """
-        hook.run(simple_update_query, parameters=(latest_api_value, new_date))
-    else:
-        pass
-    
+            parameters.append(str(parameters[0]),)
+        else:
+            first_row_cols_str = ', '.join(first_row)
+            parameters = [value for value in first_row_filtered]            
+            first_row_update_query = f"""
+            INSERT INTO kitchener_pm25
+            VALUES %s
+        """
+        hook.run(first_row_update_query, parameters=parameters)
+        
+        rest_of_data = data_to_backfill[1:]
+        second_update_query = f"""
+            INSERT INTO kitchener_pm25
+            VALUES %s
+        """
+        ti.xcom_push(key = 'backfill', value = data_to_backfill)
+        for row in rest_of_data:
+            hook.run(second_update_query, parameters=(row,))
+
 get_pm25_query_col_task = PythonOperator(
     task_id = 'check_latest_pm25',
     python_callable = query_latest_pm25,
@@ -172,4 +212,10 @@ find_time_difference_task = PythonOperator(
     dag=dag
 )
 
-get_pm25_query_col_task >> get_pm25_query_value_task >> get_latest_pm25_api_task >> find_time_difference_task
+handle_pm25_upload_task = PythonOperator(
+    task_id = 'handle_pm25_upload',
+    python_callable=handle_pm25_upload,
+    dag=dag
+)
+
+get_pm25_query_col_task >> get_pm25_query_value_task >> get_latest_pm25_api_task >> find_time_difference_task >> handle_pm25_upload_task
