@@ -79,8 +79,8 @@ def backfill_data(start_date, curr_datetime):
     # return results
     
 # start_date = '2023-07-19'
-curr_datetime = datetime.combine(datetime(2023, 7, 27), time(22, 0))
-print(backfill_data(str(datetime(2023,7,27).date()), curr_datetime))
+curr_datetime = datetime.combine(datetime(2023, 7, 31), time(2, 0))
+print(backfill_data(str(datetime(2023,7,31).date()), curr_datetime))
 
 
 # print(get_data())
