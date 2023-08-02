@@ -27,11 +27,11 @@ jobs:
 
       - name: Deploy code to EC2
         run: |
-          ssh -i ~/.ssh/ssh-key.pem ubuntu@$EC2_ADDRESS 'git config --global --replace-all user.name "Aniq Premji" && git config --global --replace-all user.email "aniqpremji@gmail.com"'
+          ssh -i ~/.ssh/ssh-key.pem ubuntu@$EC2_ADDRESS 'git config --global --replace-all user.name "Aniq Premji" && git config --global --replace-all user.email $EMAIL'
           ssh -i ~/.ssh/ssh-key.pem ubuntu@$EC2_ADDRESS '
-          if [ -d airflow-pipeline ]; 
+          if [ -d air-quality-pipeline ]; 
           then 
-            cd airflow-pipeline &&
+            cd air-quality-pipeline &&
             git status &&
             git restore .env &&
             git pull --rebase &&
@@ -51,7 +51,7 @@ jobs:
             sed -i s:%_AIRFLOW_WWW_USER_PASSWORD%:'"$_AIRFLOW_WWW_USER_PASSWORD"':g .env &&
             docker-compose up airflow-init; 
           fi'
-          ssh -i ~/.ssh/ssh-key.pem ubuntu@$EC2_ADDRESS 'cd airflow-pipeline && 
+          ssh -i ~/.ssh/ssh-key.pem ubuntu@$EC2_ADDRESS 'cd air-quality-pipeline && 
           if docker ps | grep -q keyword; 
           then docker-compose down && docker-compose up -d --build; 
           else docker-compose up -d --build; 
