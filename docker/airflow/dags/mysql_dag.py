@@ -155,7 +155,7 @@ def handle_pm25_upload(ti, **kwargs):
                 """
             hook.run(simple_update_query, parameters=(latest_api_value, new_date))
     # Otherwise, if data is not caught up
-    else:
+    elif time_diff > 1:
         data_to_backfill = backfill_data(str(latest_pm25_datetime.date()), latest_pm25_datetime)
         first_row = data_to_backfill[0]
         # If first row is already full

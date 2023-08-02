@@ -17,7 +17,7 @@ default_args = {
     'owner': 'aniqpremji',
     'start_date': '2023-07-28',
     'retries': 3,
-    'retry_delay': timedelta(minutes=5),
+    'retry_delay': timedelta(minutes=7),
 }
 
 # Create the DAG instance
