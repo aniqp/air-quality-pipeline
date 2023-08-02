@@ -42,7 +42,7 @@ jobs:
             cd air-quality-pipeline &&
             git status &&
             git pull --rebase &&
-            git status &&
+            git status
           else
             git clone https://github.com/aniqp/air-quality-pipeline.git &&
             cd air-quality-pipeline &&
