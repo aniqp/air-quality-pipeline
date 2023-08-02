@@ -27,7 +27,7 @@ jobs:
 
       - name: Deploy code to EC2
         run: |
-          ssh -i ~/.ssh/ssh-key.pem ubuntu@$EC2_ADDRESS 'git config --global --replace-all user.name "Full Name" && git config --global --replace-all user.email "email@email.com"'
+          ssh -i ~/.ssh/ssh-key.pem ubuntu@$EC2_ADDRESS 'git config --global --replace-all user.name "Aniq Premji" && git config --global --replace-all user.email "aniqpremji@gmail.com"'
           ssh -i ~/.ssh/ssh-key.pem ubuntu@$EC2_ADDRESS '
           if [ -d airflow-pipeline ]; 
           then 
