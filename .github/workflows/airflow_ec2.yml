@@ -1,0 +1,58 @@
+name: Deploy to EC2
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  deploy-prod:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v2
+
+      - name: Install SSH client and rsync
+        run: |
+          sudo apt-get update -y
+          sudo apt-get install -y openssh-client rsync
+
+      - name: Setup SSH key
+        run: |
+          mkdir -p ~/.ssh
+          echo "$SSH_KEY_EC2" > ~/.ssh/ssh-key.pem
+          chmod 400 ~/.ssh/ssh-key.pem
+          echo -e "Host *\n\tStrictHostKeyChecking no\n\n" > ~/.ssh/config
+
+      - name: Deploy code to EC2
+        run: |
+          ssh -i ~/.ssh/ssh-key.pem ubuntu@$EC2_ADDRESS 'git config --global --replace-all user.name "Full Name" && git config --global --replace-all user.email "email@email.com"'
+          ssh -i ~/.ssh/ssh-key.pem ubuntu@$EC2_ADDRESS '
+          if [ -d airflow-pipeline ]; 
+          then 
+            cd airflow-pipeline &&
+            git status &&
+            git restore .env &&
+            git pull --rebase &&
+            git status &&
+            sed -i s:%AIRFLOW_UID%:'"$(id -u)"':g .env &&
+            sed -i s:%AIRFLOW_GID%:0:g .env &&
+            sed -i s:%_AIRFLOW_WWW_USER_USERNAME%:'"$_AIRFLOW_WWW_USER_USERNAME"':g .env &&
+            sed -i s:%_AIRFLOW_WWW_USER_PASSWORD%:'"$_AIRFLOW_WWW_USER_PASSWORD"':g .env;
+          else
+            git clone https://'"$GITLAB_USERNAME"':'"$GITLAB_PASSWORD"'@gitlab.com/gitlab-group/gitlab-project.git &&
+            cd airflow-pipeline &&
+            ls -la &&
+            chmod 777 logs &&
+            sed -i s:%AIRFLOW_UID%:'"$(id -u)"':g .env &&
+            sed -i s:%AIRFLOW_GID%:0:g .env &&
+            sed -i s:%_AIRFLOW_WWW_USER_USERNAME%:'"$_AIRFLOW_WWW_USER_USERNAME"':g .env &&
+            sed -i s:%_AIRFLOW_WWW_USER_PASSWORD%:'"$_AIRFLOW_WWW_USER_PASSWORD"':g .env &&
+            docker-compose up airflow-init; 
+          fi'
+          ssh -i ~/.ssh/ssh-key.pem ubuntu@$EC2_ADDRESS 'cd airflow-pipeline && 
+          if docker ps | grep -q keyword; 
+          then docker-compose down && docker-compose up -d --build; 
+          else docker-compose up -d --build; 
+          fi;'
