@@ -43,15 +43,11 @@ jobs:
             git status &&
             git pull --rebase &&
             git status &&
-            sed -i s:%_AIRFLOW_WWW_USER_USERNAME%:'"${{ secrets._AIRFLOW_WWW_USER_USERNAME }}"':g &&
-            sed -i s:%_AIRFLOW_WWW_USER_PASSWORD%:'"${{ secrets._AIRFLOW_WWW_USER_PASSWORD }}"':g;
           else
             git clone https://github.com/aniqp/air-quality-pipeline.git &&
             cd air-quality-pipeline &&
             ls -la &&
             chmod 777 logs &&
-            sed -i s:%_AIRFLOW_WWW_USER_USERNAME%:'"${{ secrets._AIRFLOW_WWW_USER_USERNAME }}"':g &&
-            sed -i s:%_AIRFLOW_WWW_USER_PASSWORD%:'"${{ secrets._AIRFLOW_WWW_USER_PASSWORD }}"':g &&
             docker-compose up airflow-init; 
           fi'
           ssh -i ~/.ssh/ssh-key.pem ubuntu@${{ secrets.EC2_ADDRESS }} 'cd air-quality-pipeline && 
