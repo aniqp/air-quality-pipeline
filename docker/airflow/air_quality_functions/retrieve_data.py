@@ -11,8 +11,12 @@ def get_data():
   headers = {"accept": "application/json", "X-API-Key": "bf94e16e413120ef454855fc046f5018c262c450b0ee9e976e31b4f5fad116e9"}
   response = requests.get(url, headers=headers)
   data = response.json()
+  print(f'Data: {data}')
 
-  results = data['results']
+  try:
+    results = data['results']
+  except KeyError:
+    print('API failed to retrieve data.')
 
   measurements = results[0]['measurements']
 
@@ -46,7 +50,10 @@ def backfill_data(start_date, curr_datetime):
     response = requests.get(url, headers=headers)
     data = response.json()
 
-    results = data['results']
+    try:
+      results = data['results']
+    except KeyError:
+       print('API failed to retrieve data.')
 
     pm25_data = []
     o3_data = []
@@ -79,8 +86,8 @@ def backfill_data(start_date, curr_datetime):
     # return results
     
 # start_date = '2023-07-19'
-curr_datetime = datetime.combine(datetime(2023, 7, 31), time(2, 0))
-print(backfill_data(str(datetime(2023,7,31).date()), curr_datetime))
+# curr_datetime = datetime.combine(datetime(2023, 7, 31), time(2, 0))
+# print(backfill_data(str(datetime(2023,7,31).date()), curr_datetime))
 
 
-# print(get_data())
+print(get_data())
