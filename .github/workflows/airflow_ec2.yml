@@ -31,8 +31,8 @@ jobs:
 
       - name: Deploy code to EC2
         run: |
-          ssh -i ~/.ssh/ssh-key.pem ubuntu@$EC2_ADDRESS 'git config --global --replace-all user.name "Aniq Premji" && git config --global --replace-all user.email $EMAIL'
-          ssh -i ~/.ssh/ssh-key.pem ubuntu@$EC2_ADDRESS '
+          ssh -i ~/.ssh/ssh-key.pem ubuntu@${{ secrets.EC2_ADDRESS }} 'git config --global --replace-all user.name "Aniq Premji" && git config --global --replace-all user.email ${{ secrets.EMAIL }}'
+          ssh -i ~/.ssh/ssh-key.pem ubuntu@${{ secrets.EC2_ADDRESS }} '
           if [ -d air-quality-pipeline ]; 
           then 
             cd air-quality-pipeline &&
@@ -42,8 +42,8 @@ jobs:
             git status &&
             sed -i s:%AIRFLOW_UID%:'"$(id -u)"':g .env &&
             sed -i s:%AIRFLOW_GID%:0:g .env &&
-            sed -i s:%_AIRFLOW_WWW_USER_USERNAME%:'"$_AIRFLOW_WWW_USER_USERNAME"':g .env &&
-            sed -i s:%_AIRFLOW_WWW_USER_PASSWORD%:'"$_AIRFLOW_WWW_USER_PASSWORD"':g .env;
+            sed -i s:%_AIRFLOW_WWW_USER_USERNAME%:'"${{ secrets._AIRFLOW_WWW_USER_USERNAME }}"':g .env &&
+            sed -i s:%_AIRFLOW_WWW_USER_PASSWORD%:'"${{ secrets._AIRFLOW_WWW_USER_PASSWORD }}"':g .env;
           else
             git clone @https://github.com/aniqp/air-quality-pipeline.git &&
             cd air-quality-pipeline &&
@@ -51,11 +51,11 @@ jobs:
             chmod 777 logs &&
             sed -i s:%AIRFLOW_UID%:'"$(id -u)"':g .env &&
             sed -i s:%AIRFLOW_GID%:0:g .env &&
-            sed -i s:%_AIRFLOW_WWW_USER_USERNAME%:'"$_AIRFLOW_WWW_USER_USERNAME"':g .env &&
-            sed -i s:%_AIRFLOW_WWW_USER_PASSWORD%:'"$_AIRFLOW_WWW_USER_PASSWORD"':g .env &&
+            sed -i s:%_AIRFLOW_WWW_USER_USERNAME%:'"${{ secrets._AIRFLOW_WWW_USER_USERNAME }}"':g .env &&
+            sed -i s:%_AIRFLOW_WWW_USER_PASSWORD%:'"${{ secrets._AIRFLOW_WWW_USER_PASSWORD }}"':g .env &&
             docker-compose up airflow-init; 
           fi'
-          ssh -i ~/.ssh/ssh-key.pem ubuntu@$EC2_ADDRESS 'cd air-quality-pipeline && 
+          ssh -i ~/.ssh/ssh-key.pem ubuntu@${{ secrets.EC2_ADDRESS }} 'cd air-quality-pipeline && 
           if docker ps | grep -q keyword; 
           then docker-compose down && docker-compose up -d --build; 
           else docker-compose up -d --build; 
