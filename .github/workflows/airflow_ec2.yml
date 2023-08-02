@@ -45,7 +45,7 @@ jobs:
             sed -i s:%_AIRFLOW_WWW_USER_USERNAME%:'"${{ secrets._AIRFLOW_WWW_USER_USERNAME }}"':g .env &&
             sed -i s:%_AIRFLOW_WWW_USER_PASSWORD%:'"${{ secrets._AIRFLOW_WWW_USER_PASSWORD }}"':g .env;
           else
-            git clone @https://github.com/aniqp/air-quality-pipeline.git &&
+            git clone https://github.com/aniqp/air-quality-pipeline.git &&
             cd air-quality-pipeline &&
             ls -la &&
             chmod 777 logs &&
