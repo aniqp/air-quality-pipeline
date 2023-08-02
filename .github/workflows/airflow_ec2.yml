@@ -48,9 +48,10 @@ jobs:
             cd air-quality-pipeline &&
             ls -la &&
             chmod 777 logs &&
+            cd docker/airflow
             docker-compose up airflow-init; 
           fi'
-          ssh -i ~/.ssh/ssh-key.pem ubuntu@${{ secrets.EC2_ADDRESS }} 'cd air-quality-pipeline && 
+          ssh -i ~/.ssh/ssh-key.pem ubuntu@${{ secrets.EC2_ADDRESS }} 'cd air-quality-pipeline/docker/airflow && 
           if docker ps | grep -q keyword; 
           then docker-compose down && docker-compose up -d --build; 
           else docker-compose up -d --build; 
