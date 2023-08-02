@@ -21,7 +21,7 @@ jobs:
       - name: Setup SSH key
         run: |
           mkdir -p ~/.ssh
-          echo "$SSH_KEY_EC2" > ~/.ssh/ssh-key.pem
+          echo "${{ secrets.SSH_KEY_EC2 }}" > ~/.ssh/ssh-key.pem
           chmod 400 ~/.ssh/ssh-key.pem
           echo -e "Host *\n\tStrictHostKeyChecking no\n\n" > ~/.ssh/config
           
