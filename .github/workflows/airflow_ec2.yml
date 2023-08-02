@@ -28,6 +28,10 @@ jobs:
       - name: Test connection to EC2
         run: |
           ssh -i ~/.ssh/ssh-key.pem ubuntu@${{ secrets.EC2_ADDRESS }} "echo 'Connection successful!'"
+          
+      - name: Create logs directory on EC2
+        run: |
+          ssh -i ~/.ssh/ssh-key.pem ubuntu@${{ secrets.EC2_ADDRESS }} 'mkdir -p air-quality-pipeline/logs'  
 
       - name: Deploy code to EC2
         run: |
@@ -37,11 +41,8 @@ jobs:
           then 
             cd air-quality-pipeline &&
             git status &&
-            git restore .env &&
             git pull --rebase &&
             git status &&
-            sed -i s:%AIRFLOW_UID%:'"$(id -u)"':g .env &&
-            sed -i s:%AIRFLOW_GID%:0:g .env &&
             sed -i s:%_AIRFLOW_WWW_USER_USERNAME%:'"${{ secrets._AIRFLOW_WWW_USER_USERNAME }}"':g .env &&
             sed -i s:%_AIRFLOW_WWW_USER_PASSWORD%:'"${{ secrets._AIRFLOW_WWW_USER_PASSWORD }}"':g .env;
           else
@@ -49,8 +50,6 @@ jobs:
             cd air-quality-pipeline &&
             ls -la &&
             chmod 777 logs &&
-            sed -i s:%AIRFLOW_UID%:'"$(id -u)"':g .env &&
-            sed -i s:%AIRFLOW_GID%:0:g .env &&
             sed -i s:%_AIRFLOW_WWW_USER_USERNAME%:'"${{ secrets._AIRFLOW_WWW_USER_USERNAME }}"':g .env &&
             sed -i s:%_AIRFLOW_WWW_USER_PASSWORD%:'"${{ secrets._AIRFLOW_WWW_USER_PASSWORD }}"':g .env &&
             docker-compose up airflow-init; 
