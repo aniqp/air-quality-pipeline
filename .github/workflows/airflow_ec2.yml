@@ -62,4 +62,4 @@ jobs:
             if docker ps | grep -q keyword; 
             then docker-compose down && docker-compose up -d --build; 
             else docker-compose up -d --build; 
-  fi;'
+            fi;'
