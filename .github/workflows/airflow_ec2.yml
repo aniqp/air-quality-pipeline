@@ -27,11 +27,7 @@ jobs:
           
       - name: Test connection to EC2
         run: |
-          ssh -i ~/.ssh/ssh-key.pem ubuntu@${{ secrets.EC2_ADDRESS }} "echo 'Connection successful!'"
-          
-      - name: Create logs directory on EC2
-        run: |
-          ssh -i ~/.ssh/ssh-key.pem ubuntu@${{ secrets.EC2_ADDRESS }} 'mkdir -p air-quality-pipeline/logs'  
+          ssh -i ~/.ssh/ssh-key.pem ubuntu@${{ secrets.EC2_ADDRESS }} "echo 'Connection successful!'"  
 
       - name: Deploy code to EC2
         run: |
