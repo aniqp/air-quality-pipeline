@@ -35,7 +35,7 @@ jobs:
 
       - name: Deploy code to EC2
         run: |
-          ssh -T -i ~/.ssh/ssh-key.pem ubuntu@*** '
+          ssh -T -i ~/.ssh/ssh-key.pem ubuntu@{{ secrets.EC2_ADDRESS }} '
             set -x;  # Enable debugging
             if [ -d air-quality-pipeline ]; 
             then 
