@@ -29,34 +29,40 @@ jobs:
         run: |
           ssh -i ~/.ssh/ssh-key.pem ubuntu@${{ secrets.EC2_ADDRESS }} "echo 'Connection successful!'"
 
+      - name: Install Docker Requirements
+        run: |
+          sudo apt-get update &&
+          sudo apt-get install -y docker.io &&
+          sudo curl -L "https://github.com/docker/compose/releases/latest/download/docker-compose-$(uname -s)-$(uname -m)" -o /usr/local/bin/docker-compose &&
+          sudo chmod +x /usr/local/bin/docker-compose &&
+          sudo usermod -aG docker $USER;
+
       - name: Deploy code to EC2
         run: |
-          ssh -i ~/.ssh/ssh-key.pem ubuntu@${{ secrets.EC2_ADDRESS }} 'git config --global --replace-all user.name "Aniq Premji" && git config --global --replace-all user.email ${{ secrets.EMAIL }}'
-          ssh -i ~/.ssh/ssh-key.pem ubuntu@${{ secrets.EC2_ADDRESS }} '
-          if [ -d air-quality-pipeline ]; 
-          then 
-            cd air-quality-pipeline &&
-            git status &&
-            git restore .env &&
-            git pull --rebase &&
-            git status &&
-            sed -i s:%AIRFLOW_UID%:'"$(id -u)"':g .env &&
-            sed -i s:%AIRFLOW_GID%:0:g .env &&
-            sed -i s:%_AIRFLOW_WWW_USER_USERNAME%:'"${{ secrets._AIRFLOW_WWW_USER_USERNAME }}"':g .env &&
-            sed -i s:%_AIRFLOW_WWW_USER_PASSWORD%:'"${{ secrets._AIRFLOW_WWW_USER_PASSWORD }}"':g .env;
-          else
-            git clone https://github.com/aniqp/air-quality-pipeline.git &&
-            cd air-quality-pipeline &&
-            ls -la &&
-            chmod 777 logs &&
-            sed -i s:%AIRFLOW_UID%:'"$(id -u)"':g .env &&
-            sed -i s:%AIRFLOW_GID%:0:g .env &&
-            sed -i s:%_AIRFLOW_WWW_USER_USERNAME%:'"${{ secrets._AIRFLOW_WWW_USER_USERNAME }}"':g .env &&
-            sed -i s:%_AIRFLOW_WWW_USER_PASSWORD%:'"${{ secrets._AIRFLOW_WWW_USER_PASSWORD }}"':g .env &&
-            docker-compose up airflow-init; 
-          fi'
-          ssh -i ~/.ssh/ssh-key.pem ubuntu@${{ secrets.EC2_ADDRESS }} 'cd air-quality-pipeline && 
-          if docker ps | grep -q keyword; 
-          then docker-compose down && docker-compose up -d --build; 
-          else docker-compose up -d --build; 
-          fi;'
+          ssh -T -i ~/.ssh/ssh-key.pem ubuntu@${{ secrets.EC2_ADDRESS }} '
+            set -x;  # Enable debugging
+            if [ -d air-quality-pipeline ]; 
+            then 
+              cd air-quality-pipeline &&
+              git status &&
+              git pull --rebase &&
+              git status;
+            else
+              git config --global --replace-all user.name "Aniq Premji" &&
+              git config --global --replace-all user.email ${{ secrets.EMAIL }};
+              git clone https://github.com/aniqp/air-quality-pipeline.git &&
+              cd air-quality-pipeline &&
+              mkdir -p air-quality-pipeline/logs &&
+              ls -la &&
+              chmod 777 logs &&
+              cd docker/airflow &&
+              docker-compose up airflow-init; 
+            fi'
+
+          ssh -T -i ~/.ssh/ssh-key.pem ubuntu@${{ secrets.EC2_ADDRESS }} '
+            cd air-quality-pipeline/docker/airflow && 
+            pwd;  # Print current working directory
+            if docker ps | grep -q keyword; 
+            then docker-compose down && docker build . && docker-compose up -d --build; 
+            else docker build . && docker-compose up -d --build; 
+            fi;'
