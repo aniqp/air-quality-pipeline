@@ -27,7 +27,15 @@ jobs:
           
       - name: Test connection to EC2
         run: |
-          ssh -i ~/.ssh/ssh-key.pem ubuntu@${{ secrets.EC2_ADDRESS }} "echo 'Connection successful!'"  
+          ssh -i ~/.ssh/ssh-key.pem ubuntu@${{ secrets.EC2_ADDRESS }} "echo 'Connection successful!'"
+
+      - name: Install Docker Requirements
+        run: |
+          sudo apt-get update &&
+          sudo apt-get install -y docker.io &&
+          sudo curl -L "https://github.com/docker/compose/releases/latest/download/docker-compose-$(uname -s)-$(uname -m)" -o /usr/local/bin/docker-compose &&
+          sudo chmod +x /usr/local/bin/docker-compose &&
+          sudo usermod -aG docker $USER;
 
       - name: Deploy code to EC2
         run: |
@@ -55,6 +63,6 @@ jobs:
             cd air-quality-pipeline/docker/airflow && 
             pwd;  # Print current working directory
             if docker ps | grep -q keyword; 
-            then docker-compose down && docker-compose up -d --build; 
-            else docker-compose up -d --build; 
+            then docker-compose down && docker build . && docker-compose up -d --build; 
+            else docker build . && docker-compose up -d --build; 
             fi;'
