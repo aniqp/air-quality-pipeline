@@ -36,7 +36,6 @@ jobs:
             if [ -d air-quality-pipeline ]; 
             then 
               cd air-quality-pipeline &&
-              pwd;  # Print current working directory
               git status &&
               git pull --rebase &&
               git status;
@@ -45,6 +44,7 @@ jobs:
               git config --global --replace-all user.email ${{ secrets.EMAIL }};
               git clone https://github.com/aniqp/air-quality-pipeline.git &&
               cd air-quality-pipeline &&
+              mkdir -p air-quality-pipeline/logs &&
               ls -la &&
               chmod 777 logs &&
               cd docker/airflow &&
