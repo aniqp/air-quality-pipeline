@@ -35,7 +35,7 @@ jobs:
 
       - name: Deploy code to EC2
         run: |
-          ssh -T -i ~/.ssh/ssh-key.pem ubuntu@{{ secrets.EC2_ADDRESS }} '
+          ssh -T -i ~/.ssh/ssh-key.pem ubuntu@${{ secrets.EC2_ADDRESS }} '
             set -x;  # Enable debugging
             if [ -d air-quality-pipeline ]; 
             then 
@@ -46,7 +46,7 @@ jobs:
               git status;
             else
               git config --global --replace-all user.name "Aniq Premji" &&
-              git config --global --replace-all user.email ***;
+              git config --global --replace-all user.email ${{ secrets.EMAIL }};
               git clone https://github.com/aniqp/air-quality-pipeline.git &&
               cd air-quality-pipeline &&
               ls -la &&
@@ -55,8 +55,7 @@ jobs:
               docker-compose up airflow-init; 
             fi'
 
-          ssh -T -i ~/.ssh/ssh-key.pem ubuntu@*** '
-            set -x;  # Enable debugging
+          ssh -T -i ~/.ssh/ssh-key.pem ubuntu@${{ secrets.EC2_ADDRESS }} '
             cd air-quality-pipeline/docker/airflow && 
             pwd;  # Print current working directory
             if docker ps | grep -q keyword; 
