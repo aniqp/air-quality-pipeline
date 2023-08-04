@@ -3,7 +3,7 @@
 ## Project Overview
 Given the ongoing wildfires in Canada in the summer of 2023, it has become increasingly important for Canadians to monitor the local air quality and ensure conditions are safe outdoors.
 Specifically, there has been a significant increase in the PM2.5 pollutant as a result of the fires. As a student at the University of Waterloo in Kitchener, Ontario, I wanted to deliver insights about the area's PM2.5 levels to help fellow citizens stay informed about potentially hazardous conditions.
-Essential insights encompass real-time updates on pollutant levels, a comprehensive understanding of their historical trends, and reliable forecasts for the upcoming day.
+Essential insights include real-time updates on pollutant levels,  an understanding of their historical trends, and reliable forecasts for the upcoming day.
 
 The above motivates this project, where I have created a data pipeline which regularly obtains, transforms, stores, forecasts, and visualizes live air quality data to deliver valuable health information to Kitchener residents.
 ## Architecture
