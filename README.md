@@ -21,14 +21,16 @@ The above motivates this project, where I have created a data pipeline which reg
 5. **Forecasting**: An fbprophet model that is trained and hyperparameter tuned on data from the start of the summer (i.e., time of sudden increase in PM2.5 values) is used to predict the air quality over the next 24 hours. Forecasts are made by a separate DAG and are stored in the ```kitchener_pm25_forecasts``` table of the RDS instance.
 
 6. **Data Visualization**: Looker Studio's MySQL connector is used to obtain the relevant data from the created tables and views.
-   
-     *Today's Air Quality*, showcasing PM2.5 measurements over the last 24 hours, forecasts for the current date, and important summary statistics.
+
+## Visualization
+
+*Today's Air Quality*, showcasing PM2.5 measurements over the last 24 hours, forecasts for the current date, and important summary statistics.
   
   <img width="888" alt="image" src="https://github.com/aniqp/air-quality-pipeline/assets/89875233/9f1b1305-9ad6-483d-9c76-60208b899e4a">
   
   *Historical Air Quality*, demonstrating PM2.5 measurements across historical date ranges (hourly, weekly, YTD averages).
   
-  <img width="888" alt="image" src="https://github.com/aniqp/air-quality-pipeline/assets/89875233/274e941b-228d-4d62-bbb5-410266820226">
+  <img width="888" alt="image" src="https://github.com/aniqp/air-quality-pipeline/assets/89875233/d041a775-6202-41c8-b0f0-7fac9632a2ea">
 
 ## Forecasting Model Considerations
 
