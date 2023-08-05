@@ -28,12 +28,20 @@ The above motivates this project, where I have created a data pipeline which reg
   
   *Historical Air Quality*, demonstrating PM2.5 measurements across historical date ranges (hourly, weekly, YTD averages).
   
-  <img width="888" alt="image" src="https://github.com/aniqp/air-quality-pipeline/assets/89875233/210d8f96-da07-4d0f-9789-683abe5e2dc0">
+  <img width="888" alt="image" src="https://github.com/aniqp/air-quality-pipeline/assets/89875233/274e941b-228d-4d62-bbb5-410266820226">
+
+## Forecasting Model Considerations
+
+I chose to use the fbprophet forecasting model over other traditional methods like ARIMA (AutoRegressive Integrated Moving Average) and SARIMA (Seasonal AutoRegressive Integrated Moving Average) due to its simplicity, flexibility, and ability to handle seasonal and non-linear data patterns.
+
+First, fbprophet incorporates seasonality and holidays as additive components, making it well-suited for capturing periodic trends in air quality data, such as daily and weekly variations. Second, it automatically detects changepoints in the data, allowing it to adapt to sudden changes in pollutant levels, which is crucial during wildfire events that can significantly impact air quality in a short period.
+
+Another key advantage of fbprophet is its ease of implementation and interpretation. It provides intuitive diagnostics and visualizations that help in understanding model performance and identifying potential areas for improvement. This is particularly valuable when communicating forecasting results to stakeholders who may not have a strong background in time series analysis.
+
+Lastly, one of the challenges in time series forecasting is dealing with missing data points, which can occur due to various reasons such as sensor failures, data collection gaps, or other issues. Traditional forecasting methods like SARIMA/ARIMA usually require imputing or interpolating missing values manually, which can introduce inaccuracies and uncertainty in the forecasting process. In contrast, fbprophet is designed to handle missing data gracefully. It automatically accounts for missing data points during the modeling process by imputating them with estimations following the identified trend/seasonality, allowing it to provide more accurate forecasts. By incorporating missing data as a part of the modeling process, fbprophet can better capture the underlying patterns and trends in the time series, leading to more reliable predictions.
+
+Overall, the combination of fbprophet's built-in seasonality handling. and user-friendly features made it a suitable choice for accurate and interpretable air quality forecasting, aligning well with the project's objective of delivering reliable insights to Kitchener residents.
 
 ## Future Project Goals and Next Steps
 1. Collecting data for more cities/types of pollutants and visualizing them
 2. Exploring real-time data streaming tools such as Kafka, which would help with availability and scalability of data retrieval.
-
-
-
-
