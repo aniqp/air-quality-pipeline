@@ -12,8 +12,6 @@ The above motivates this project, where I have created a data pipeline which reg
 
 1. **Workflow Orchestration**: Airflow is built from a docker-compose file on an EC2 instance through GitHub Actions. It is responsible for scheduling and executing jobs throughout the pipeline.
 
-*Note: EC2 instance has been stopped due to project budget constraints*
-
 2. **Data Ingestion**: An Airflow DAG runs hourly to retrieve the latest PM2.5 data from the OpenAQ API in JSON format.
 
 3. **Data Processing and Validation**: The data processing and validation tasks are executed sequentially. If the data is exactly one hour later than the most recent entry in the database, it is directly inserted. However, if the time difference exceeds one hour, an additional API call is made to backfill the data, ensuring that the latest information is retrieved, even if it was not available during the initial API call.
@@ -49,3 +47,5 @@ Overall, the combination of fbprophet's built-in seasonality handling. and user-
 ## Future Project Goals and Next Steps
 1. Collecting data for more cities/types of pollutants and visualizing them
 2. Exploring real-time data streaming tools such as Kafka, which would help with availability and scalability of data retrieval.
+
+*Note: EC2 instance has been stopped due to project budget constraints.*
