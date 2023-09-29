@@ -86,29 +86,6 @@ def get_latest_pm25_api(ti):
     latest_pm25_api = get_data()
     ti.xcom_push(key = 'latest_pm25_api', value = latest_pm25_api)    
 
-def get_value_for_latest_pm25(ti):
-    """
-        For previously defined latest date and time, get pm25 value
-    """
-    hook = MySqlHook(mysql_conn_id='mysql_conn')
-    latest_pm25_date = ti.xcom_pull(task_ids = 'check_latest_pm25', key = 'latest_pm25_date_col')
-    latest_pm25_date = datetime.strptime(latest_pm25_date, "%Y-%m-%d").date()
-    latest_pm25_time_col = ti.xcom_pull(task_ids = 'check_latest_pm25', key = 'latest_pm25_time_col')
-
-    # Protect against SQL injections
-    valid_columns = [f'H{i:02d}' for i in range(24)]
-    if latest_pm25_time_col not in valid_columns:
-        raise ValueError(f"Invalid column name: {latest_pm25_time_col}")
-
-    query_latest_value = f"""
-        SELECT {latest_pm25_time_col} FROM kitchener_pm25
-        WHERE date_column = %s
-    """
-
-    result = hook.get_first(query_latest_value, parameters=(latest_pm25_date,))[0]
-
-    ti.xcom_push(key = 'latest_pm25_value', value = result)
-
 def find_time_difference(ti):
     result = ti.xcom_pull(task_ids = 'get_latest_pm25_api', key ='latest_pm25_api')
     latest_datetime = ti.xcom_pull(task_ids = 'check_latest_pm25', key = 'latest_pm25_datetime')
@@ -158,45 +135,42 @@ def handle_pm25_upload(ti, **kwargs):
     elif time_diff > 1:
         data_to_backfill = backfill_data(str(latest_pm25_datetime.date()), latest_pm25_datetime)
         first_row = data_to_backfill[0]
-        # If first row is already full
-        if first_row[0] == latest_pm25_date_col:
-            first_row_filtered = tuple(value for value in first_row if value is not None)
+        print(f'First row: {first_row}')
+        first_row_filtered = tuple(value for value in first_row if value is not None)
+        if first_row[0] == latest_pm25_date_col and sum(i is not None for i in first_row[1:]) > 0:
             first_row_cols = ['date_column = %s'] + [f'H{i:02d} = %s' for i in range(24) if first_row[i+1] is not None]
             first_row_cols_str = ', '.join(first_row_cols)
-            parameters = [value for value in first_row_filtered]            
+            parameters = [value for value in first_row_filtered]
+            parameters.append(str(parameters[0]))
+            parameters = tuple(parameters)         
             first_row_update_query = f"""
                 UPDATE kitchener_pm25
                 SET {first_row_cols_str}
                 WHERE date_column = %s
             """
-            parameters.append(str(parameters[0]),)
+            hook.run(first_row_update_query, parameters=parameters)
+        # If first row is already full    
         else:
-            first_row_cols_str = ', '.join(first_row)
-            parameters = [value for value in first_row_filtered]            
-            first_row_update_query = f"""
-            INSERT INTO kitchener_pm25
-            VALUES %s
-        """
-        hook.run(first_row_update_query, parameters=parameters)
-        
-        rest_of_data = data_to_backfill[1:]
-        second_update_query = f"""
-            INSERT INTO kitchener_pm25
-            VALUES %s
-        """
-        ti.xcom_push(key = 'backfill', value = data_to_backfill)
-        for row in rest_of_data:
-            hook.run(second_update_query, parameters=(row,))
+            if sum(i is not None for i in first_row[1:]) > 0:         
+                first_row_update_query = f"""
+                    INSERT INTO kitchener_pm25
+                    VALUES %s
+                """
+                hook.run(first_row_update_query, parameters=(first_row,))
+        # If there is still more data to add        
+        if len(data_to_backfill) > 1:
+            rest_of_data = data_to_backfill[1:]
+            second_update_query = f"""
+                INSERT INTO kitchener_pm25
+                VALUES %s
+            """
+            ti.xcom_push(key = 'backfill', value = data_to_backfill)
+            for row in rest_of_data:
+                hook.run(second_update_query, parameters=(row,))
 
 get_pm25_query_col_task = PythonOperator(
     task_id = 'check_latest_pm25',
     python_callable = query_latest_pm25,
-    dag = dag
-)
-
-get_pm25_query_value_task = PythonOperator(
-    task_id = 'check_latest_pm25_value',
-    python_callable = get_value_for_latest_pm25,
     dag = dag
 )
 
@@ -218,4 +192,4 @@ handle_pm25_upload_task = PythonOperator(
     dag=dag
 )
 
-get_pm25_query_col_task >> get_pm25_query_value_task >> get_latest_pm25_api_task >> find_time_difference_task >> handle_pm25_upload_task
+get_pm25_query_col_task >> get_latest_pm25_api_task >> find_time_difference_task >> handle_pm25_upload_task
